@@ -18,13 +18,13 @@ services:
     WizaplaceFrontBundle\Command\PushTranslationsCommand:
         arguments:
             $translatorBag: '@translator.default'
-            $locales: [ '%locale%' ]
+            $locales: '%locales%'
             $defaultLocale: '%kernel.default_locale%'
             $systemUserPassword: '%wizaplace.system_user_password%'
         public: true
     WizaplaceFrontBundle\Command\PullTranslationsCommand:
         arguments:
-            $locales: [ '%locale%' ]
+            $locales: '%locales%'
             $translationsDir: "%kernel.project_dir%/var/translations"
         public: true
     WizaplaceFrontBundle\Service\AuthenticationService:
@@ -91,6 +91,8 @@ services:
         public: true
     Wizaplace\SDK\Catalog\CatalogService:
         public: true
+    Wizaplace\SDK\Catalog\CatalogServiceInterface:
+        alias: 'Wizaplace\SDK\Catalog\CatalogService'
     Wizaplace\SDK\Catalog\Review\ReviewService:
         public: true
     Wizaplace\SDK\Basket\BasketService:
@@ -121,12 +123,17 @@ services:
         public: true
     WizaplaceFrontBundle\Service\ContactService:
         public: true
+    WizaplaceFrontBundle\Service\CategoryTreeCacheDecorator:
+        decorates: 'Wizaplace\SDK\Catalog\CatalogServiceInterface'
+        arguments: ['@WizaplaceFrontBundle\Service\CategoryTreeCacheDecorator.inner']
     WizaplaceFrontBundle\Twig\AppExtension:
         arguments:
-            $cache: '@cache.app'
             $recaptchaKey: '%recaptcha.key%'
+    Symfony\Component\HttpFoundation\Session\Flash\FlashBagInterface: '@session.flash_bag'
+    Symfony\Component\Translation\Dumper\XliffFileDumper: '@translation.dumper.xliff'
 
 parameters:
     api.connect_timeout: 3
     api.read_timeout: 5
     api.timeout: 5
+    locales: ['%kernel.default_locale%']

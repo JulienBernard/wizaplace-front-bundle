@@ -75,6 +75,7 @@
     "email_field_required_error_message": "L'adresse email doit être renseignée, merci de réessayer",
     "account_creation_error_message": "Erreur de connection après la création du compte",
     "password_reset_confirmation_message": "Vous allez recevoir un email afin de pouvoir réinitialiser votre mot de passe",
+    "password_reset_error_message": "Une erreur est survenue",
     "email_already_in_use": "Cette adresse email est déjà utilisée, merci de réessayer",
     "account_creation_success_message": "Votre compte a bien été créé",
     "continue_my_shopping": "Continuer mes achats",
@@ -100,5 +101,8 @@
     "greentax": "Eco taxe : %tax%",
     "add_to_basket": "ajouter au panier",
     "out_of_stock": "rupture de stock",
-    "invalid_password_reset_token": "Lien de modification de mot de passe invalide."
+    "invalid_password_reset_token": "Lien de modification de mot de passe invalide.",
+    "price.currency": " €",
+    "price.decimal-delimiter": ",",
+    "price.thousands-delimiter": " "
 }

@@ -6,9 +6,9 @@
 
 namespace WizaplaceFrontBundle\Twig;
 
-use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Component\Asset\Packages;
-use Wizaplace\SDK\Catalog\CatalogService;
+use Symfony\Component\Translation\TranslatorInterface;
+use Wizaplace\SDK\Catalog\CatalogServiceInterface;
 use Wizaplace\SDK\Cms\CmsService;
 use Wizaplace\SDK\Image\Image;
 use Wizaplace\SDK\Image\ImageService;
@@ -19,7 +19,7 @@ use WizaplaceFrontBundle\Service\ProductUrlGenerator;
 
 class AppExtension extends \Twig_Extension
 {
-    /** @var CatalogService */
+    /** @var CatalogServiceInterface */
     private $catalogService;
     /** @var BasketService */
     private $basketService;
@@ -27,8 +27,6 @@ class AppExtension extends \Twig_Extension
     private $imageService;
     /** @var CmsService */
     private $cmsService;
-    /** @var CacheItemPoolInterface */
-    private $cache;
     /** @var string */
     private $recaptchaKey;
     /** @var Packages */
@@ -39,29 +37,31 @@ class AppExtension extends \Twig_Extension
     private $attributeVariantUrlGenerator;
     /** @var FavoriteService */
     private $favoriteService;
+    /** @var TranslatorInterface */
+    private $translator;
 
     public function __construct(
-        CatalogService $catalogService,
+        CatalogServiceInterface $catalogService,
         BasketService $basketService,
         ImageService $imageService,
         CmsService $cmsService,
-        CacheItemPoolInterface $cache,
         string $recaptchaKey,
         Packages $assets,
         ProductUrlGenerator $productUrlGenerator,
         AttributeVariantUrlGenerator $attributeVariantUrlGenerator,
-        FavoriteService $favoriteService
+        FavoriteService $favoriteService,
+        TranslatorInterface $translator
     ) {
         $this->catalogService = $catalogService;
         $this->basketService = $basketService;
         $this->imageService = $imageService;
         $this->cmsService = $cmsService;
-        $this->cache = $cache;
         $this->recaptchaKey = $recaptchaKey;
         $this->assets = $assets;
         $this->productUrlGenerator = $productUrlGenerator;
         $this->attributeVariantUrlGenerator = $attributeVariantUrlGenerator;
         $this->favoriteService = $favoriteService;
+        $this->translator = $translator;
     }
 
     public function getFunctions()
@@ -82,7 +82,7 @@ class AppExtension extends \Twig_Extension
         return [
             new \Twig_SimpleFilter('imageUrl', [$this, 'imageUrl']),
             new \Twig_SimpleFilter('productUrl', [$this->productUrlGenerator, 'generateProductUrl']),
-            new \Twig_SimpleFilter('price', [$this, 'formatPrice']),
+            new \Twig_SimpleFilter('price', [$this, 'formatPrice'], array('is_safe' => array('html'))),
             new \Twig_SimpleFilter('brand', [$this->catalogService, 'getBrand']),
             new \Twig_SimpleFilter('brandUrl', [$this->attributeVariantUrlGenerator, 'generateAttributeVariantUrl']),
         ];
@@ -105,19 +105,9 @@ class AppExtension extends \Twig_Extension
         return (string) $this->imageService->getImageLink($imageId, $width, $height);
     }
 
-    /**
-     * @throws \Psr\Cache\InvalidArgumentException
-     */
     public function getCategoryTree():array
     {
-        $categoryTree = $this->cache->getItem('categoryTree');
-        if (!$categoryTree->isHit()) {
-            $categoryTree->set($this->catalogService->getCategoryTree());
-            $categoryTree->expiresAfter(3600);
-            $this->cache->save($categoryTree);
-        }
-
-        return $categoryTree->get();
+        return $this->catalogService->getCategoryTree();
     }
 
     public function getRecaptchaKey(): string
@@ -127,7 +117,14 @@ class AppExtension extends \Twig_Extension
 
     public function formatPrice(float $price): string
     {
-        return number_format($price, 2, ',', ' ').'€';
+        $decimalSeparator = $this->translator->trans('price.decimal-delimiter');
+        $thousandsSeparator = $this->translator->trans('price.thousands-delimiter');
+        $currency = $this->translator->trans('price.currency');
+
+        $formattedPrice = number_format($price, 2, $decimalSeparator, $thousandsSeparator);
+        [$integerPart, $decimalPart] = explode($decimalSeparator, $formattedPrice, 2);
+
+        return '<span class="price__integer-part">'.$integerPart.'</span><span class="price__delimiter">'.$decimalSeparator.'</span><span class="price__decimal-part">'.$decimalPart.'</span><span class="price__currency">'.$currency.'</span>';
     }
 
     /**

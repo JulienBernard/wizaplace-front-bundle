@@ -11,6 +11,112 @@
 
 </details>
 
+## 0.4.1
+
+### New features
+
+- `\WizaplaceFrontBundle\Service\BasketService::addCoupon` now throws detailed exceptions
+- `\WizaplaceFrontBundle\Service\BasketService::checkout` now throws detailed exceptions
+- Upgrade SDK to v1.19.0
+
+## 0.4.0
+
+### New features
+
+ - Upgrade to Symfony 3.4
+
+## 0.3.5
+
+### New features
+
+ - Upgrade SDK to v1.18.0
+ - Add an optional GeoFilter parameter to `\WizaplaceFrontBundle\Service\JsonSearchService::search`
+
+## 0.3.4
+
+### New features
+
+ - Update `\WizaplaceFrontBundle\Twig\AppExtension::formatPrice`. It now returns spans and css classes in order to customize the price display.
+
+## 0.3.3
+
+ - Use `price.currency` translation key instead of just `currency`
+
+## 0.3.2
+
+### New features
+
+ - Add cache on `getCategoryTree` which avoids loading the tree several times during a single request
+ - Set `%locales%` default value to `%kernel.default_locale%`, facilitating the transition from version 0.2.* to >=0.3.0
+
+## 0.3.1
+
+### New features
+
+ - Make `\WizaplaceFrontBundle\Twig\AppExtension::formatPrice` use the `currency` translation key instead of `€`.
+ - Upgrade SDK to v1.15.1
+ - Added `\WizaplaceFrontBundle\Service\JsonSearchService`
+
+### Bugfixes
+
+ - Fix a bug causing us to try to merge a basket with itself
+
+## 0.3.0
+
+### BREAKING CHANGES
+
+ - Instead of the `locale` parameter, we now expects a `locales` array parameter containing all available locales
+
+## 0.2.20
+
+### New features
+
+ - `\WizaplaceFrontBundle\Security\User` now forwards getter calls to `\Wizaplace\SDK\User\User` (no need to use `getWizaplaceUser` anymore)
+ - the request's locale is now automatically set into the ApiClient, opening the way for multi-lang
+
+## 0.2.19
+
+### New features
+
+ - Added `\WizaplaceFrontBundle\Service\BasketService::setPickupPoint`
+
+## 0.2.18
+
+### New features
+
+ - Added "userFavoriteIds" variable in CategoryController::viewAction
+ - Upgraded SDK to v1.14.0
+ - Added `\WizaplaceFrontBundle\Service\AuthenticationService::getInitiateResetPasswordForm`
+ - Added `\WizaplaceFrontBundle\Service\AuthenticationService::initiateResetPassword`
+ - Deprecated `\WizaplaceFrontBundle\Controller\AuthController::initiateResetPasswordAction`
+
+## 0.2.17
+
+### New features
+
+ - Added `\WizaplaceFrontBundle\Service\ProductListService::getLatestProductsWithAttributeChecked`
+ - Added `\WizaplaceFrontBundle\Service\FavoriteService::getFavoriteIds`
+ - `\WizaplaceFrontBundle\Service\FavoriteService::getAll` does not throw `AuthenticationRequired` exceptions anymore, instead it returns an empty array
+ - `\WizaplaceFrontBundle\Service\FavoriteService::isInFavorites` does not throw `AuthenticationRequired` exceptions anymore, instead it returns `false`
+ - Added `\WizaplaceFrontBundle\Service\DeclinationService::listProductOptionSelectsFromSelectedDeclination`
+ - Added `\WizaplaceFrontBundle\Service\DeclinationService::listProductOptionSelectsFromSelectedVariantsIds`
+ - Marked `\WizaplaceFrontBundle\Controller\ProductController::viewAction` as deprecated
+ - Upgraded SDK to v1.12.0
+
+## 0.2.16
+
+### New features
+
+ - Reduce the number of basket-related API calls
+ - Upgraded SDK to v1.11.0
+
+## 0.2.15
+
+### New features
+
+ - Added `\WizaplaceFrontBundle\Security\User::ROLE_VENDOR` as a user role for vendors
+ - Upgraded SDK to v1.10.0
+
 ## 0.2.14
 
 ### New features

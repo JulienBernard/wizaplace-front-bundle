@@ -23,6 +23,7 @@ use Wizaplace\SDK\Authentication\AuthenticationRequired;
 use Wizaplace\SDK\Basket\Basket;
 use Wizaplace\SDK\Basket\Comment;
 use Wizaplace\SDK\Basket\PaymentInformation;
+use Wizaplace\SDK\Basket\SetPickupPointCommand;
 use Wizaplace\SDK\Catalog\DeclinationId;
 use WizaplaceFrontBundle\Security\User;
 
@@ -58,7 +59,11 @@ class BasketService implements EventSubscriberInterface, LogoutHandlerInterface
 
     public function getBasket(): Basket
     {
-        $basketId = $this->getBasketId();
+        $basketId = $this->getCurrentBasketId();
+        if ($basketId === null) {
+            return Basket::createEmpty('fake-empty-basket');
+        }
+
         if (!$this->basket || $this->basket->getId() !== $basketId) {
             try {
                 $this->basket = $this->baseService->getBasket($basketId);
@@ -80,9 +85,13 @@ class BasketService implements EventSubscriberInterface, LogoutHandlerInterface
      */
     public function addProductToBasket(DeclinationId $declinationId, int $quantity): int
     {
-        $this->basket = null;
+        try {
+            $result = $this->baseService->addProductToBasket($this->getBasketId(), $declinationId, $quantity);
+        } finally {
+            $this->basket = null; // invalidate local cache
+        }
 
-        return $this->baseService->addProductToBasket($this->getBasketId(), $declinationId, $quantity);
+        return $result;
     }
 
     /**
@@ -90,9 +99,11 @@ class BasketService implements EventSubscriberInterface, LogoutHandlerInterface
      */
     public function removeProductFromBasket(DeclinationId $declinationId): void
     {
-        $this->basket = null;
-
-        $this->baseService->removeProductFromBasket($this->getBasketId(), $declinationId);
+        try {
+            $this->baseService->removeProductFromBasket($this->getBasketId(), $declinationId);
+        } finally {
+            $this->basket = null; // invalidate local cache
+        }
     }
 
     /**
@@ -100,9 +111,11 @@ class BasketService implements EventSubscriberInterface, LogoutHandlerInterface
      */
     public function cleanBasket(): void
     {
-        $this->basket = null;
-
-        $this->baseService->cleanBasket($this->getBasketId());
+        try {
+            $this->baseService->cleanBasket($this->getBasketId());
+        } finally {
+            $this->basket = null; // invalidate local cache
+        }
     }
 
     /**
@@ -111,19 +124,27 @@ class BasketService implements EventSubscriberInterface, LogoutHandlerInterface
      */
     public function updateProductQuantity(DeclinationId $declinationId, int $quantity): int
     {
-        $this->basket = null;
+        try {
+            $result = $this->baseService->updateProductQuantity($this->getBasketId(), $declinationId, $quantity);
+        } finally {
+            $this->basket = null; // invalidate local cache
+        }
 
-        return $this->baseService->updateProductQuantity($this->getBasketId(), $declinationId, $quantity);
+        return $result;
     }
 
     /**
-     * @throws \Wizaplace\SDK\Basket\Exception\CouponAlreadyPresent
-     * @throws \Wizaplace\SDK\Exception\NotFound
+     * @throws \Wizaplace\SDK\Exception\BasketNotFound
+     * @throws \Wizaplace\SDK\Exception\CouponCodeAlreadyApplied
+     * @throws \Wizaplace\SDK\Exception\CouponCodeDoesNotApply
      */
     public function addCoupon(string $coupon): void
     {
-        $this->basket = null;
-        $this->baseService->addCoupon($this->getBasketId(), $coupon);
+        try {
+            $this->baseService->addCoupon($this->getBasketId(), $coupon);
+        } finally {
+            $this->basket = null; // invalidate local cache
+        }
     }
 
     /**
@@ -131,8 +152,11 @@ class BasketService implements EventSubscriberInterface, LogoutHandlerInterface
      */
     public function removeCoupon(string $coupon): void
     {
-        $this->basket = null;
-        $this->baseService->removeCoupon($this->getBasketId(), $coupon);
+        try {
+            $this->baseService->removeCoupon($this->getBasketId(), $coupon);
+        } finally {
+            $this->basket = null; // invalidate local cache
+        }
     }
 
     /**
@@ -148,35 +172,46 @@ class BasketService implements EventSubscriberInterface, LogoutHandlerInterface
 
     public function selectShippings(array $selections): void
     {
-        $this->basket = null;
-        $this->baseService->selectShippings($this->getBasketId(), $selections);
-    }
-
-    /**
-     * @throws AuthenticationRequired
-     * @throws \Wizaplace\SDK\Exception\NotFound
-     * @throws \Wizaplace\SDK\Exception\SomeParametersAreInvalid
-     */
-    public function checkout(int $paymentId, bool $acceptTerms, string $redirectUrl): PaymentInformation
-    {
-        $this->basket = null;
-
-        return $this->baseService->checkout($this->getBasketId(), $paymentId, $acceptTerms, $redirectUrl);
-    }
-
-    public function forgetBasket(): void
-    {
-        $this->basket = null;
-        $this->session->remove(self::ID_SESSION_KEY);
         try {
-            $this->baseService->setUserBasketId(null);
-        } catch (AuthenticationRequired $e) {
-            // We are not logged in, this is not a real error.
+            $this->baseService->selectShippings($this->getBasketId(), $selections);
+        } finally {
+            $this->basket = null; // invalidate local cache
         }
     }
 
     /**
-     * @param $comments Comment[]
+     * @throws AuthenticationRequired
+     * @throws \Wizaplace\SDK\Exception\BasketIsEmpty
+     * @throws \Wizaplace\SDK\Exception\BasketNotFound
+     * @throws \Wizaplace\SDK\Exception\SomeParametersAreInvalid
+     */
+    public function checkout(int $paymentId, bool $acceptTerms, string $redirectUrl): PaymentInformation
+    {
+        try {
+            $result = $this->baseService->checkout($this->getBasketId(), $paymentId, $acceptTerms, $redirectUrl);
+        } finally {
+            $this->basket = null; // invalidate local cache
+        }
+
+        return $result;
+    }
+
+    public function forgetBasket(): void
+    {
+        try {
+            $this->session->remove(self::ID_SESSION_KEY);
+            try {
+                $this->baseService->setUserBasketId(null);
+            } catch (AuthenticationRequired $e) {
+                // We are not logged in, this is not a real error.
+            }
+        } finally {
+            $this->basket = null; // invalidate local cache
+        }
+    }
+
+    /**
+     * @param Comment[] $comments
      * @throws \Wizaplace\SDK\Exception\NotFound
      * @throws \Wizaplace\SDK\Exception\SomeParametersAreInvalid
      */
@@ -203,6 +238,9 @@ class BasketService implements EventSubscriberInterface, LogoutHandlerInterface
 
             $currentBasketId = $this->getCurrentBasketId();
             if (null !== $currentBasketId) {
+                if ($currentBasketId === $userBasketId) {
+                    return; // can't merge a basket with itself
+                }
                 $this->baseService->mergeBaskets($userBasketId, $currentBasketId);
             }
 
@@ -235,6 +273,20 @@ class BasketService implements EventSubscriberInterface, LogoutHandlerInterface
     }
 
     /**
+     * @throws \Wizaplace\SDK\Exception\SomeParametersAreInvalid
+     */
+    public function setPickupPoint(SetPickupPointCommand $command): void
+    {
+        $command->setBasketId($this->getBasketId());
+
+        try {
+            $this->baseService->setPickupPoint($command);
+        } finally {
+            $this->basket = null; // invalidate local cache
+        }
+    }
+
+    /**
      * Gets current basket ID, or create a new one
      * @return string
      */
@@ -243,7 +295,8 @@ class BasketService implements EventSubscriberInterface, LogoutHandlerInterface
         $basketId = $this->getCurrentBasketId();
 
         if (null === $basketId) {
-            $basketId = $this->baseService->create();
+            $this->basket = $this->baseService->createEmptyBasket();
+            $basketId = $this->basket->getId();
             $this->setCurrentBasketId($basketId);
         }
 
